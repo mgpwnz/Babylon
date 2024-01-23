@@ -105,7 +105,8 @@ case "$response" in
     sudo systemctl disable babylon
     sudo systemctl daemon-reload
     rm /etc/systemd/system/babylon.service
-    rm -rf $HOME/babylon
+    rm -rf $HOME/babylon $HOME/.babylon*
+    rm /usr/local/bin/babylond
     echo "Done"
     cd $HOME
     ;;
