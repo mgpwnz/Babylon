@@ -1,13 +1,28 @@
 #!/bin/bash
-while true
-do
-# Menu
-PS3='Select an action: '
-options=("Pre-download" "Download the components" "Create the configuration" "logs" "Create wallet" "Balance check" "Create BLS key" "Status"  "Run Validator"  "Uninstall" "Exit")
-select opt in "${options[@]}"
-               do
-                   case $opt in                          
-"Pre-download")
+# Default variables
+function="install"
+# Options
+option_value(){ echo "$1" | sed -e 's%^--[^=]*=%%g; s%^-[^=]*=%%g'; }
+while test $# -gt 0; do
+        case "$1" in
+        -in|--install)
+            function="install"
+            shift
+            ;;
+        -un|--uninstall)
+            function="uninstall"
+            shift
+            ;;
+	    -up|--update)
+            function="update"
+            shift
+            ;;
+        *|--)
+		break
+		;;
+	esac
+done
+install() {
  # Оновлення та встановлення пакетів
                 sudo apt update && sudo apt upgrade -y
                 packages=("unzip" "gcc" "make" "logrotate" "git" "jq" "lz4" "sed" "wget" "curl" "build-essential" "coreutils" "systemd")
@@ -26,21 +41,15 @@ select opt in "${options[@]}"
                     echo "export PATH=$PATH:/usr/local/go/bin:~/go/bin" >> ~/.bash_profile
                     source $HOME/.bash_profile
                 fi
-break
-;;
-"Download the components")
-# Clone repository
+#Build
 cd $HOME
 git clone https://github.com/babylonchain/babylon.git
-cd $HOME/babylon
+cd babylon
 git checkout v0.7.2
 make build
 cp $HOME/babylon/build/babylond /usr/local/bin/
 cd
-break
-;;
-"Create the configuration")
-#ini
+#config
 if [ ! $MONIKER ]; then
 		read -p "Enter Moniker: " MONIKER
 		echo 'export MONIKER='$MONIKER} >> $HOME/.bash_profile
@@ -63,11 +72,11 @@ sed -i \
   -e 's|^pruning-keep-every *=.*|pruning-keep-every = "0"|' \
   -e 's|^pruning-interval *=.*|pruning-interval = "19"|' \
   $HOME/.babylond/config/app.toml
-#service
-sudo tee /etc/systemd/system/babylon.service > /dev/null << EOF
 
-[Unit]
+#service
+echo "[Unit]
 Description=Babylon Node
+
 After=network-online.target
 [Service]
 User=$USER
@@ -77,7 +86,9 @@ RestartSec=10
 LimitNOFILE=10000
 [Install]
 WantedBy=multi-user.target
-EOF
+    " > $HOME/babylon.service
+
+    sudo mv $HOME/babylon.service /etc/systemd/system
 sleep 1
 babylond tendermint unsafe-reset-all --home $HOME/.babylond --keep-addr-book
 #run service
@@ -86,61 +97,28 @@ sudo systemctl enable babylon
 sudo systemctl start babylon
 echo "sudo journalctl -u babylond -f --no-hostname -o cat"
 
-break
-;;
-"Run Validator")
-babylond tx checkpointing create-validator \
---amount 1000000ubbn \
---pubkey $(babylond tendermint show-validator) \
---moniker "$MONIKER" \
---chain-id bbn-test-2 \
---commission-rate 0.1 \
---commission-max-rate 0.20 \
---commission-max-change-rate 0.01 \
---min-self-delegation 1 \
---from wallet \
---gas-adjustment 1.4 \
---gas auto \
---gas-prices 0.00001ubbn \
--y
-break
-;;
-
-"Status")
-echo "false - значит нода синхронизирована"
-babylond status | jq .SyncInfo.catching_up
-break
-;;
-
-"logs")
-sudo journalctl -u babylon -f --no-hostname -o cat
-break
-;;
-"Create wallet")
-babylond keys add wallet
-break
-;;
-"Balance check")
-babylond q bank balances $(babylond keys show wallet -a)
-break
-;;
-"Create BLS key")
-babylond create-bls-key $(babylond keys show wallet -a)
-break
-;;
-"Uninstall")
-sudo systemctl disable babylon
-sudo systemctl daemon-reload
-rm /etc/systemd/system/babylon.service
-rm -rf $HOME/babylon
-
-break
-;;
-
-"Exit")
-exit
-;;
-*) echo "invalid option $REPLY";;
+}
+uninstall() {
+read -r -p "You really want to delete the node? [y/N] " response
+case "$response" in
+    [yY][eE][sS]|[yY]) 
+    sudo systemctl disable babylon
+    sudo systemctl daemon-reload
+    rm /etc/systemd/system/babylon.service
+    rm -rf $HOME/babylon
+    echo "Done"
+    cd $HOME
+    ;;
+    *)
+        echo Сanceled
+        return 0
+        ;;
 esac
-done
-done
+}
+update() {
+echo to do
+}
+# Actions
+sudo apt install wget -y &>/dev/null
+cd
+$function
