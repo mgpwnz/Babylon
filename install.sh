@@ -8,21 +8,24 @@ select opt in "${options[@]}"
                do
                    case $opt in                          
 "Pre-download")
-#update
-sudo apt update && sudo apt upgrade -y
-#libs
-sudo apt install -y unzip  gcc make logrotate git jq lz4 sed wget curl build-essential coreutils systemd
-#go
-cd $HOME
-! [ -x "$(command -v go)" ] && {
-VER="1.20.3"
-wget "https://golang.org/dl/go$VER.linux-amd64.tar.gz" &> /dev/null
-sudo rm -rf /usr/local/go &> /dev/null
-sudo tar -C /usr/local -xzf "go$VER.linux-amd64.tar.gz" &> /dev/null
-rm "go$VER.linux-amd64.tar.gz" &> /dev/null
-[ ! -f ~/.bash_profile ] && touch ~/.bash_profile
-echo "export PATH=$PATH:/usr/local/go/bin:~/go/bin" >> ~/.bash_profile
-source $HOME/.bash_profile
+ # Оновлення та встановлення пакетів
+                sudo apt update && sudo apt upgrade -y
+                packages=("unzip" "gcc" "make" "logrotate" "git" "jq" "lz4" "sed" "wget" "curl" "build-essential" "coreutils" "systemd")
+                for package in "${packages[@]}"; do
+                    command -v "$package" > /dev/null || sudo apt install -y "$package"
+                done
+                
+                # Встановлення Go
+                if ! command -v go; then
+                    VER="1.20.3"
+                    wget "https://golang.org/dl/go$VER.linux-amd64.tar.gz" &> /dev/null
+                    sudo rm -rf /usr/local/go &> /dev/null
+                    sudo tar -C /usr/local -xzf "go$VER.linux-amd64.tar.gz" &> /dev/null
+                    rm "go$VER.linux-amd64.tar.gz" &> /dev/null
+                    [ ! -f ~/.bash_profile ] && touch ~/.bash_profile
+                    echo "export PATH=$PATH:/usr/local/go/bin:~/go/bin" >> ~/.bash_profile
+                    source $HOME/.bash_profile
+                fi
 }
 break
 ;;
