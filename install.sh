@@ -26,7 +26,6 @@ select opt in "${options[@]}"
                     echo "export PATH=$PATH:/usr/local/go/bin:~/go/bin" >> ~/.bash_profile
                     source $HOME/.bash_profile
                 fi
-}
 break
 ;;
 "Download the components")
