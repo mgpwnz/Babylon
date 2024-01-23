@@ -107,6 +107,9 @@ case "$response" in
     rm /etc/systemd/system/babylon.service
     rm -rf $HOME/babylon $HOME/.babylon*
     rm /usr/local/bin/babylond
+    #moniker
+    unset MONIKER && \
+    sed -i "/ MONIKER=/d" $HOME/.bash_profile
     echo "Done"
     cd $HOME
     ;;
