@@ -117,12 +117,15 @@ break
 ;;
 "Create wallet")
 babylond keys add wallet
+break
 ;;
 "Balance check")
 babylond q bank balances $(babylond keys show wallet -a)
+break
 ;;
 "Create BLS key")
 babylond create-bls-key $(babylond keys show wallet -a)
+break
 ;;
 "Uninstall")
 sudo systemctl disable babylond
