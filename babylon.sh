@@ -51,13 +51,13 @@ cd $HOME
 git clone https://github.com/babylonchain/babylon.git &> /dev/null
 cd babylon
 git checkout v0.7.2 &> /dev/null
-make build
+make build &> /dev/null
 cp $HOME/babylon/build/babylond /usr/local/bin/
 cd
 #config
-babylond config chain-id bbn-test-2
-babylond config keyring-backend test
-babylond init $MONIKER --chain-id bbn-test-2
+babylond config chain-id bbn-test-2 &> /dev/null
+babylond config keyring-backend test &> /dev/null
+babylond init $MONIKER --chain-id bbn-test-2 &> /dev/null
 #snap
 curl -Ls https://snapshots.kjnodes.com/babylon-testnet/genesis.json > $HOME/.babylond/config/genesis.json &> /dev/null
 curl -Ls https://snapshots.kjnodes.com/babylon-testnet/addrbook.json > $HOME/.babylond/config/addrbook.json &> /dev/null
