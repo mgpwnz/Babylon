@@ -63,7 +63,7 @@ sed -i \
   -e 's|^pruning-interval *=.*|pruning-interval = "19"|' \
   $HOME/.babylond/config/app.toml
 #service
-sudo tee /etc/systemd/system/babylond.service > /dev/null << EOF
+sudo tee /etc/systemd/system/babylon.service > /dev/null << EOF
 
 [Unit]
 Description=Babylon Node
@@ -81,8 +81,8 @@ sleep 1
 babylond tendermint unsafe-reset-all --home $HOME/.babylond --keep-addr-book
 #run service
 sudo systemctl daemon-reload
-sudo systemctl enable babylond
-sudo systemctl start babylond
+sudo systemctl enable babylon
+sudo systemctl start babylon
 echo "sudo journalctl -u babylond -f --no-hostname -o cat"
 
 break
@@ -112,7 +112,7 @@ break
 ;;
 
 "logs")
-sudo journalctl -u babylond -f --no-hostname -o cat
+sudo journalctl -u babylon -f --no-hostname -o cat
 break
 ;;
 "Create wallet")
@@ -128,9 +128,9 @@ babylond create-bls-key $(babylond keys show wallet -a)
 break
 ;;
 "Uninstall")
-sudo systemctl disable babylond
+sudo systemctl disable babylon
 sudo systemctl daemon-reload
-rm /etc/systemd/system/babylond.service
+rm /etc/systemd/system/babylon.service
 rm -rf $HOME/babylon
 
 break
