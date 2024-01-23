@@ -30,11 +30,11 @@ if [ ! $MONIKER ]; then
 	fi
 . $HOME/.bash_profile
 # Оновлення та встановлення пакетів
-sudo apt update && sudo apt upgrade -y
+sudo apt update && sudo apt upgrade -y &> /dev/null
 packages=("unzip" "gcc" "make" "logrotate" "git" "jq" "lz4" "sed" "wget" "curl" "build-essential" "coreutils" "systemd")
 
 # Встановлення пакетів без підтвердження та з увімкненням автоматичних перезапусків
-sudo DEBIAN_FRONTEND=noninteractive apt install -yq --no-install-recommends "${packages[@]}"
+sudo DEBIAN_FRONTEND=noninteractive apt install -yq --no-install-recommends "${packages[@]}" &> /dev/null
 # Встановлення Go
                 if ! command -v go; then
                     VER="1.20.3"
@@ -48,9 +48,9 @@ sudo DEBIAN_FRONTEND=noninteractive apt install -yq --no-install-recommends "${p
                 fi
 #Build
 cd $HOME
-git clone https://github.com/babylonchain/babylon.git
+git clone https://github.com/babylonchain/babylon.git &> /dev/null
 cd babylon
-git checkout v0.7.2
+git checkout v0.7.2 &> /dev/null
 make build
 cp $HOME/babylon/build/babylond /usr/local/bin/
 cd
@@ -59,8 +59,8 @@ babylond config chain-id bbn-test-2
 babylond config keyring-backend test
 babylond init $MONIKER --chain-id bbn-test-2
 #snap
-curl -Ls https://snapshots.kjnodes.com/babylon-testnet/genesis.json > $HOME/.babylond/config/genesis.json
-curl -Ls https://snapshots.kjnodes.com/babylon-testnet/addrbook.json > $HOME/.babylond/config/addrbook.json
+curl -Ls https://snapshots.kjnodes.com/babylon-testnet/genesis.json > $HOME/.babylond/config/genesis.json &> /dev/null
+curl -Ls https://snapshots.kjnodes.com/babylon-testnet/addrbook.json > $HOME/.babylond/config/addrbook.json &> /dev/null
 #config
 sed -i -e "s|^seeds *=.*|seeds = \"3f472746f46493309650e5a033076689996c8881@babylon-testnet.rpc.kjnodes.com:16459\"|" $HOME/.babylond/config/config.toml
 
@@ -90,7 +90,7 @@ LimitNOFILE=10000
 WantedBy=multi-user.target
 " | sudo tee /etc/systemd/system/babylon.service > /dev/null
 sleep 1
-babylond tendermint unsafe-reset-all --home $HOME/.babylond --keep-addr-book
+babylond tendermint unsafe-reset-all --home $HOME/.babylond --keep-addr-book &> /dev/null
 #run service
 sudo systemctl daemon-reload
 sudo systemctl enable babylon
