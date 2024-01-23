@@ -23,14 +23,19 @@ while test $# -gt 0; do
 	esac
 done
 install() {
- # Оновлення та встановлення пакетів
-                sudo apt update && sudo apt upgrade -y
-                packages=("unzip" "gcc" "make" "logrotate" "git" "jq" "lz4" "sed" "wget" "curl" "build-essential" "coreutils" "systemd")
-                for package in "${packages[@]}"; do
-                    command -v "$package" > /dev/null || sudo apt install -y "$package"
-                done
-                
-                # Встановлення Go
+#монікер
+if [ ! $MONIKER ]; then
+		read -p "Enter Moniker: " MONIKER
+		echo 'export MONIKER='$MONIKER} >> $HOME/.bash_profile
+	fi
+. $HOME/.bash_profile
+# Оновлення та встановлення пакетів
+sudo apt update && sudo apt upgrade -y
+packages=("unzip" "gcc" "make" "logrotate" "git" "jq" "lz4" "sed" "wget" "curl" "build-essential" "coreutils" "systemd")
+
+# Встановлення пакетів без підтвердження та з увімкненням автоматичних перезапусків
+sudo DEBIAN_FRONTEND=noninteractive apt install -yq --no-install-recommends "${packages[@]}"
+# Встановлення Go
                 if ! command -v go; then
                     VER="1.20.3"
                     wget "https://golang.org/dl/go$VER.linux-amd64.tar.gz" &> /dev/null
@@ -50,11 +55,6 @@ make build
 cp $HOME/babylon/build/babylond /usr/local/bin/
 cd
 #config
-if [ ! $MONIKER ]; then
-		read -p "Enter Moniker: " MONIKER
-		echo 'export MONIKER='$MONIKER} >> $HOME/.bash_profile
-	fi
-. $HOME/.bash_profile
 babylond config chain-id bbn-test-2
 babylond config keyring-backend test
 babylond init $MONIKER --chain-id bbn-test-2
@@ -74,28 +74,28 @@ sed -i \
   $HOME/.babylond/config/app.toml
 
 #service
-echo "[Unit]
+echo "
+[Unit]
 Description=Babylon Node
-
 After=network-online.target
+
 [Service]
 User=$USER
 ExecStart=$(which babylond) start
 Restart=on-failure
 RestartSec=10
 LimitNOFILE=10000
+
 [Install]
 WantedBy=multi-user.target
-    " > $HOME/babylon.service
-
-    sudo mv $HOME/babylon.service /etc/systemd/system
+" | sudo tee /etc/systemd/system/babylon.service > /dev/null
 sleep 1
 babylond tendermint unsafe-reset-all --home $HOME/.babylond --keep-addr-book
 #run service
 sudo systemctl daemon-reload
 sudo systemctl enable babylon
 sudo systemctl start babylon
-echo "sudo journalctl -u babylond -f --no-hostname -o cat"
+echo -e "\e[32msudo journalctl -u babylon -f --no-hostname -o cat\e[0m"
 
 }
 uninstall() {
