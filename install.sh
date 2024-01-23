@@ -35,8 +35,7 @@ git clone https://github.com/babylonchain/babylon.git
 cd $HOME/babylon
 git checkout v0.7.2
 make build
-cd $HOME/babylon/build/
-cp ./babylond /usr/local/bin/
+cp $HOME/babylon/build/babylond /usr/local/bin/
 cd
 break
 ;;
