@@ -40,7 +40,11 @@ break
 ;;
 "Create the configuration")
 #ini
-MONIKER="NODE_MONIKER"
+if [ ! $MONIKER ]; then
+		read -p "Enter Moniker: " MONIKER
+		echo 'export MONIKER='$MONIKER} >> $HOME/.bash_profile
+	fi
+. $HOME/.bash_profile
 babylond config chain-id bbn-test-2
 babylond config keyring-backend test
 babylond init $MONIKER --chain-id bbn-test-2
