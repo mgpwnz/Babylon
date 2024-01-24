@@ -30,11 +30,11 @@ if [ ! $MONIKER ]; then
 	fi
 . $HOME/.bash_profile
 # Оновлення та встановлення пакетів
-sudo apt update && sudo apt upgrade -y &> /dev/null
+sudo apt-get install unattended-upgrades
 packages=("unzip" "gcc" "make" "logrotate" "git" "jq" "lz4" "sed" "wget" "curl" "build-essential" "coreutils" "systemd")
 
-# Встановлення пакетів без підтвердження та з увімкненням автоматичних перезапусків
-sudo DEBIAN_FRONTEND=noninteractive apt install -yq --no-install-recommends "${packages[@]}" &> /dev/null
+# Встановлення пакетів  та з увімкненням автоматичних перезапусків
+sudo DEBIAN_FRONTEND=noninteractive apt install -yq  "${packages[@]}" &> /dev/null
 # Встановлення Go
                 if ! command -v go; then
                     VER="1.20.3"
