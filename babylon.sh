@@ -52,46 +52,13 @@ git clone https://github.com/babylonchain/babylon.git &> /dev/null
 cd babylon
 git checkout v0.7.2 &> /dev/null
 make build &> /dev/null
-mkdir -p $HOME/.babylond/cosmovisor/genesis/bin
-mv build/babylond $HOME/.babylond/cosmovisor/genesis/bin/
-rm -rf build
-sudo ln -s $HOME/.babylond/cosmovisor/genesis $HOME/.babylond/cosmovisor/current -f
-sudo ln -s $HOME/.babylond/cosmovisor/current/bin/babylond /usr/local/bin/babylond -f
+cp $HOME/babylon/build/babylond /usr/local/bin/
 cd
-#cosmovisor
-go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@v1.5.0
-#service
-echo "
-[Unit]
-Description=babylon node service
-After=network-online.target
-
-[Service]
-User=$USER
-ExecStart=$(which cosmovisor) run start
-Restart=on-failure
-RestartSec=10
-LimitNOFILE=65535
-Environment="DAEMON_HOME=$HOME/.babylond"
-Environment="DAEMON_NAME=babylond"
-Environment="UNSAFE_SKIP_BACKUP=true"
-Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:$HOME/.babylond/cosmovisor/current/bin"
-
-[Install]
-WantedBy=multi-user.target
-" | sudo tee /etc/systemd/system/babylon.service > /dev/null
-sleep 1
-babylond tendermint unsafe-reset-all --home $HOME/.babylond --keep-addr-book &> /dev/null
-#run service
-sudo systemctl daemon-reload
-sudo systemctl enable babylon
-sudo systemctl start babylon
 #config
-babylond config chain-id bbn-test-2 
-babylond config keyring-backend test 
-babylond config node tcp://localhost:16457
-babylond init $MONIKER --chain-id bbn-test-2 
-# Download genesis and addrbook
+babylond config chain-id bbn-test-2 &> /dev/null
+babylond config keyring-backend test &> /dev/null
+babylond init $MONIKER --chain-id bbn-test-2 &> /dev/null
+#snap
 curl -Ls https://snapshots.kjnodes.com/babylon-testnet/genesis.json > $HOME/.babylond/config/genesis.json
 curl -Ls https://snapshots.kjnodes.com/babylon-testnet/addrbook.json > $HOME/.babylond/config/addrbook.json
 #config
@@ -105,13 +72,29 @@ sed -i \
   -e 's|^pruning-keep-every *=.*|pruning-keep-every = "0"|' \
   -e 's|^pruning-interval *=.*|pruning-interval = "19"|' \
   $HOME/.babylond/config/app.toml
-#custom ports
-sed -i -e "s%^proxy_app = \"tcp://127.0.0.1:26658\"%proxy_app = \"tcp://127.0.0.1:16458\"%; s%^laddr = \"tcp://127.0.0.1:26657\"%laddr = \"tcp://127.0.0.1:16457\"%; s%^pprof_laddr = \"localhost:6060\"%pprof_laddr = \"localhost:16460\"%; s%^laddr = \"tcp://0.0.0.0:26656\"%laddr = \"tcp://0.0.0.0:16456\"%; s%^prometheus_listen_addr = \":26660\"%prometheus_listen_addr = \":16466\"%" $HOME/.babylond/config/config.toml
-sed -i -e "s%^address = \"tcp://localhost:1317\"%address = \"tcp://0.0.0.0:16417\"%; s%^address = \":8080\"%address = \":16480\"%; s%^address = \"localhost:9090\"%address = \"0.0.0.0:16490\"%; s%^address = \"localhost:9091\"%address = \"0.0.0.0:16491\"%; s%:8545%:16445%; s%:8546%:16446%; s%:6065%:16465%" $HOME/.babylond/config/app.toml
-#snapshot load
-curl -L https://snapshots.kjnodes.com/babylon-testnet/snapshot_latest.tar.lz4 | tar -Ilz4 -xf - -C $HOME/.babylond
-[[ -f $HOME/.babylond/data/upgrade-info.json ]] && cp $HOME/.babylond/data/upgrade-info.json $HOME/.babylond/cosmovisor/genesis/upgrade-info.json
-echo -e "\e[32mПеревірити логи\e[0m"
+
+#service
+echo "
+[Unit]
+Description=Babylon Node
+After=network-online.target
+
+[Service]
+User=$USER
+ExecStart=$(which babylond) start
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=10000
+
+[Install]
+WantedBy=multi-user.target
+" | sudo tee /etc/systemd/system/babylon.service > /dev/null
+sleep 1
+babylond tendermint unsafe-reset-all --home $HOME/.babylond --keep-addr-book &> /dev/null
+#run service
+sudo systemctl daemon-reload
+sudo systemctl enable babylon
+sudo systemctl start babylon
 echo -e "\e[32msudo journalctl -u babylon -f --no-hostname -o cat\e[0m"
 
 }
@@ -119,15 +102,11 @@ uninstall() {
 read -r -p "You really want to delete the node? [y/N] " response
 case "$response" in
     [yY][eE][sS]|[yY]) 
-    cd $HOME
-    sudo systemctl stop babylon.service
-    sudo systemctl disable babylon.service
-    sudo rm /etc/systemd/system/babylon.service
+    sudo systemctl disable babylon
     sudo systemctl daemon-reload
-    rm -f $(which babylond)
-    rm -rf $HOME/.babylond
-    rm -rf $HOME/babylon
-
+    rm /etc/systemd/system/babylon.service
+    rm -rf $HOME/babylon $HOME/.babylon*
+    rm /usr/local/bin/babylond
     #moniker
     unset MONIKER && \
     sed -i "/ MONIKER=/d" $HOME/.bash_profile
