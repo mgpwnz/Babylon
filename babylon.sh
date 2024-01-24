@@ -58,7 +58,7 @@ cd
 babylond config chain-id bbn-test-2 &> /dev/null
 babylond config keyring-backend test &> /dev/null
 babylond init $MONIKER --chain-id bbn-test-2 &> /dev/null
-#snap
+# Download genesis and addrbook
 curl -Ls https://snapshots.kjnodes.com/babylon-testnet/genesis.json > $HOME/.babylond/config/genesis.json
 curl -Ls https://snapshots.kjnodes.com/babylon-testnet/addrbook.json > $HOME/.babylond/config/addrbook.json
 #config
