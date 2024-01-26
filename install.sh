@@ -122,7 +122,10 @@ sed -i -e "s%^address = \"tcp://localhost:1317\"%address = \"tcp://0.0.0.0:16417
 curl -L https://snapshots.kjnodes.com/babylon-testnet/snapshot_latest.tar.lz4 | tar -Ilz4 -xf - -C $HOME/.babylond
 [[ -f $HOME/.babylond/data/upgrade-info.json ]] && cp $HOME/.babylond/data/upgrade-info.json $HOME/.babylond/cosmovisor/genesis/upgrade-info.json
 #start
-sudo systemctl start babylon.service && sudo journalctl -u babylon.service -f --no-hostname -o cat
+cd
+sudo systemctl start babylon.service 
+
+echo "sudo journalctl -u babylon.service -f --no-hostname -o cat"
 
 }
 uninstall() {
