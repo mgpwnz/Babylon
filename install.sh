@@ -136,14 +136,14 @@ uninstall() {
 read -r -p "You really want to delete the node? [y/N] " response
 case "$response" in
     [yY][eE][sS]|[yY]) 
-    sudo systemctl disable babylon
+    cd $HOME
+    sudo systemctl stop babylon.service
+    sudo systemctl disable babylon.service
+    sudo rm /etc/systemd/system/babylon.service
     sudo systemctl daemon-reload
-    rm /etc/systemd/system/babylon.service
-    rm -rf $HOME/babylon $HOME/.babylon*
-    rm /usr/local/bin/babylond
-    #moniker
-    unset MONIKER && \
-    sed -i "/ MONIKER=/d" $HOME/.bash_profile
+    rm -f $(which babylond)
+    rm -rf $HOME/.babylond
+    rm -rf $HOME/babylon
     echo "Done"
     cd $HOME
     ;;
