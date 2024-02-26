@@ -54,7 +54,7 @@ cd babylon
 git checkout v0.8.3
 
 # Build binaries
-make build
+make install
 # Set node configuration
 babylond config chain-id bbn-test-3
 babylond config keyring-backend test
