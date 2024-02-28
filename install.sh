@@ -37,7 +37,7 @@ packages=("unzip" "gcc" "make" "logrotate" "git" "jq" "lz4" "sed" "wget" "curl" 
 sudo DEBIAN_FRONTEND=noninteractive apt install -yq  "${packages[@]}" &> /dev/null
 # Встановлення Go
                 if ! command -v go; then
-                    VER="1.20.14"
+                    VER="1.22.0"
                     wget "https://golang.org/dl/go$VER.linux-amd64.tar.gz" &> /dev/null
                     sudo rm -rf /usr/local/go &> /dev/null
                     sudo tar -C /usr/local -xzf "go$VER.linux-amd64.tar.gz" &> /dev/null
@@ -53,7 +53,8 @@ git clone https://github.com/babylonchain/babylon.git
 cd babylon
 git checkout v0.8.3
 # Build binaries
-make build
+#make build
+make install
 
 # Prepare binaries for Cosmovisor
 mkdir -p $HOME/.babylond/cosmovisor/genesis/bin
