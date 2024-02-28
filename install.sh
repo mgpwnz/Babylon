@@ -53,7 +53,8 @@ git clone https://github.com/babylonchain/babylon.git
 cd babylon
 git checkout v0.8.3
 # Build binaries
-make build
+#make build
+make install
 
 # Prepare binaries for Cosmovisor
 mkdir -p $HOME/.babylond/cosmovisor/genesis/bin
