@@ -94,7 +94,7 @@ babylond config keyring-backend test
 babylond config node tcp://localhost:16457
 
 # Initialize the node
-babylond init $MONIKER --chain-id bbn-test-2
+babylond init $MONIKER --chain-id bbn-test-3
 
 # Download genesis and addrbook
 curl -Ls https://snapshots.kjnodes.com/babylon-testnet/genesis.json > $HOME/.babylond/config/genesis.json
