@@ -100,7 +100,7 @@ WantedBy=multi-user.target
 EOF
 sudo systemctl daemon-reload
 sudo systemctl enable babylond.service
-
+cd $HOME
 # Start the service and check the logs
 sudo systemctl start babylond.service
 sudo journalctl -u babylond.service -f --no-hostname -o cat
