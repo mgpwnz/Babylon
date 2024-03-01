@@ -30,112 +30,89 @@ if [ ! $MONIKER ]; then
 	fi
 . $HOME/.bash_profile
 # Оновлення та встановлення пакетів
-sudo apt-get install unattended-upgrades
-packages=("unzip" "gcc" "make" "logrotate" "git" "jq" "lz4" "sed" "wget" "curl" "build-essential" "coreutils" "systemd")
+# Install dependencies for building from source
+sudo apt update
+sudo apt install -y curl git jq lz4 build-essential
 
-# Встановлення пакетів  та з увімкненням автоматичних перезапусків
-sudo DEBIAN_FRONTEND=noninteractive apt install -yq  "${packages[@]}" &> /dev/null
-# Встановлення Go
-                if ! command -v go; then
-                    VER="1.22.0"
-                    wget "https://golang.org/dl/go$VER.linux-amd64.tar.gz" &> /dev/null
-                    sudo rm -rf /usr/local/go &> /dev/null
-                    sudo tar -C /usr/local -xzf "go$VER.linux-amd64.tar.gz" &> /dev/null
-                    rm "go$VER.linux-amd64.tar.gz" &> /dev/null
-                    [ ! -f ~/.bash_profile ] && touch ~/.bash_profile
-                    echo "export PATH=$PATH:/usr/local/go/bin:~/go/bin" >> ~/.bash_profile
-                    source $HOME/.bash_profile
-                fi
+# Install Go
+sudo rm -rf /usr/local/go
+curl -L https://go.dev/dl/go1.21.6.linux-amd64.tar.gz | sudo tar -xzf - -C /usr/local
+echo 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin' >> $HOME/.bash_profile
+source .bash_profile
 # Clone project repository
-cd $HOME
-rm -rf babylon
-git clone https://github.com/babylonchain/babylon.git
+# Clone project repository
+cd && rm -rf babylon
+git clone https://github.com/babylonchain/babylon
 cd babylon
 git checkout v0.8.3
-# Build binaries
-make build
-#make install
 
-# Prepare binaries for Cosmovisor
-mkdir -p $HOME/.babylond/cosmovisor/genesis/bin
-mv build/babylond $HOME/.babylond/cosmovisor/genesis/bin/
-rm -rf build
+# Build binary
+make install
 
-# Create application symlinks
-sudo ln -s $HOME/.babylond/cosmovisor/genesis $HOME/.babylond/cosmovisor/current -f
-sudo ln -s $HOME/.babylond/cosmovisor/current/bin/babylond /usr/local/bin/babylond -f
-# Download and install Cosmovisor
-go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@v1.5.0
-# Create and start service
-sudo tee /etc/systemd/system/babylon.service > /dev/null << EOF
-[Unit]
-Description=babylon node service
-After=network-online.target
-
-[Service]
-User=$USER
-ExecStart=$(which cosmovisor) run start
-Restart=on-failure
-RestartSec=10
-LimitNOFILE=65535
-Environment="DAEMON_HOME=$HOME/.babylond"
-Environment="DAEMON_NAME=babylond"
-Environment="UNSAFE_SKIP_BACKUP=true"
-Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:$HOME/.babylond/cosmovisor/current/bin"
-
-[Install]
-WantedBy=multi-user.target
-EOF
-sudo systemctl daemon-reload
-sudo systemctl enable babylon.service
-# Set node configuration
-babylond config chain-id bbn-test-3
-babylond config keyring-backend test
-babylond config node tcp://localhost:16457
+# Set node CLI configuration
+babylond config set client chain-id bbn-test-3
+babylond config set client keyring-backend test
+babylond config set client node tcp://localhost:20657
 
 # Initialize the node
-babylond init $MONIKER --chain-id bbn-test-3
+babylond init "$MONIKER" --chain-id bbn-test-3
 
-# Download genesis and addrbook
-curl -Ls https://snapshots.kjnodes.com/babylon-testnet/genesis.json > $HOME/.babylond/config/genesis.json
-curl -Ls https://snapshots.kjnodes.com/babylon-testnet/addrbook.json > $HOME/.babylond/config/addrbook.json
+# Download genesis and addrbook files
+curl -L https://snapshots-testnet.nodejumper.io/babylon-testnet/genesis.json > $HOME/.babylond/config/genesis.json
+curl -L https://snapshots-testnet.nodejumper.io/babylon-testnet/addrbook.json > $HOME/.babylond/config/addrbook.json
 
-# Add seeds
-sed -i -e "s|^seeds *=.*|seeds = \"3f472746f46493309650e5a033076689996c8881@babylon-testnet.rpc.kjnodes.com:16459\"|" $HOME/.babylond/config/config.toml
+# Set seeds
+sed -i -e 's|^seeds *=.*|seeds = "49b4685f16670e784a0fe78f37cd37d56c7aff0e@3.14.89.82:26656,9cb1974618ddd541c9a4f4562b842b96ffaf1446@3.16.63.237:26656"|' $HOME/.babylond/config/config.toml
 
 # Set minimum gas price
-sed -i -e "s|^minimum-gas-prices *=.*|minimum-gas-prices = \"0.00001ubbn\"|" $HOME/.babylond/config/app.toml
+sed -i -e 's|^minimum-gas-prices *=.*|minimum-gas-prices = "0.00001ubbn"|' $HOME/.babylond/config/app.toml
 
 # Set pruning
 sed -i \
   -e 's|^pruning *=.*|pruning = "custom"|' \
   -e 's|^pruning-keep-recent *=.*|pruning-keep-recent = "100"|' \
-  -e 's|^pruning-keep-every *=.*|pruning-keep-every = "0"|' \
-  -e 's|^pruning-interval *=.*|pruning-interval = "19"|' \
+  -e 's|^pruning-interval *=.*|pruning-interval = "17"|' \
   $HOME/.babylond/config/app.toml
 
-# Set custom ports
-sed -i -e "s%^proxy_app = \"tcp://127.0.0.1:26658\"%proxy_app = \"tcp://127.0.0.1:16458\"%; s%^laddr = \"tcp://127.0.0.1:26657\"%laddr = \"tcp://127.0.0.1:16457\"%; s%^pprof_laddr = \"localhost:6060\"%pprof_laddr = \"localhost:16460\"%; s%^laddr = \"tcp://0.0.0.0:26656\"%laddr = \"tcp://0.0.0.0:16456\"%; s%^prometheus_listen_addr = \":26660\"%prometheus_listen_addr = \":16466\"%" $HOME/.babylond/config/config.toml
-sed -i -e "s%^address = \"tcp://localhost:1317\"%address = \"tcp://0.0.0.0:16417\"%; s%^address = \":8080\"%address = \":16480\"%; s%^address = \"localhost:9090\"%address = \"0.0.0.0:16490\"%; s%^address = \"localhost:9091\"%address = \"0.0.0.0:16491\"%; s%:8545%:16445%; s%:8546%:16446%; s%:6065%:16465%" $HOME/.babylond/config/app.toml
+# Set additional configs
+sed -i 's|^network *=.*|network = "signet"|g' $HOME/.babylond/config/app.toml
 
-#snapshot
-curl -L https://snapshots.kjnodes.com/babylon-testnet/snapshot_latest.tar.lz4 | tar -Ilz4 -xf - -C $HOME/.babylond
-[[ -f $HOME/.babylond/data/upgrade-info.json ]] && cp $HOME/.babylond/data/upgrade-info.json $HOME/.babylond/cosmovisor/genesis/upgrade-info.json
-#start
-cd
-sudo systemctl start babylon.service 
+# Change ports
+sed -i -e "s%:1317%:20617%; s%:8080%:20680%; s%:9090%:20690%; s%:9091%:20691%; s%:8545%:20645%; s%:8546%:20646%; s%:6065%:20665%" $HOME/.babylond/config/app.toml
+sed -i -e "s%:26658%:20658%; s%:26657%:20657%; s%:6060%:20660%; s%:26656%:20656%; s%:26660%:20661%" $HOME/.babylond/config/config.toml
 
-echo "sudo journalctl -u babylon.service -f --no-hostname -o cat"
+# Download latest chain data snapshot
+curl "https://snapshots-testnet.nodejumper.io/babylon-testnet/babylon-testnet_latest.tar.lz4" | lz4 -dc - | tar -xf - -C "$HOME/.babylond"
 
+# Create a service
+sudo tee /etc/systemd/system/babylond.service > /dev/null << EOF
+[Unit]
+Description=Babylon node service
+After=network-online.target
+[Service]
+User=$USER
+ExecStart=$(which babylond) start
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65535
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable babylond.service
+
+# Start the service and check the logs
+sudo systemctl start babylond.service
+sudo journalctl -u babylond.service -f --no-hostname -o cat
 }
 uninstall() {
 read -r -p "You really want to delete the node? [y/N] " response
 case "$response" in
     [yY][eE][sS]|[yY]) 
     cd $HOME
-    sudo systemctl stop babylon.service
-    sudo systemctl disable babylon.service
-    sudo rm /etc/systemd/system/babylon.service
+    sudo systemctl stop babylond.service
+    sudo systemctl disable babylond.service
+    sudo rm /etc/systemd/system/babylond.service
     sudo systemctl daemon-reload
     rm -f $(which babylond)
     rm -rf $HOME/.babylond
