@@ -114,6 +114,9 @@ read -r -p "You really want to delete the node? [y/N] " response
 case "$response" in
     [yY][eE][sS]|[yY]) 
     cd $HOME
+    sudo systemctl stop babylon.service
+    sudo systemctl disable babylon.service
+    sudo rm /etc/systemd/system/babylon.service 
     sudo systemctl stop babylond.service
     sudo systemctl disable babylond.service
     sudo rm /etc/systemd/system/babylond.service
