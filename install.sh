@@ -28,6 +28,10 @@ if [ ! $MONIKER ]; then
 		read -p "Enter Moniker: " MONIKER
 		echo 'export MONIKER='$MONIKER >> $HOME/.bash_profile
 	fi
+if [ ! $EMAIL ]; then
+		read -p "Enter email: " EMAIL
+		echo 'export EMAIL='$EMAIL >> $HOME/.bash_profile
+	fi
 . $HOME/.bash_profile
 # Оновлення та встановлення пакетів
 # Install dependencies for building from source
